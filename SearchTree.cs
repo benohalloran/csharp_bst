@@ -9,62 +9,68 @@ namespace SearchTree
 	public class SearchTree
 	{
 		private TreeNode head;
-				
+		private ReaderWriterLockSlim treeLock;
 		public SearchTree ()
 		{
 			head = null;		
+			treeLock = new ReaderWriterLockSlim();
 		}
 		
 		public bool Insert(int Data){
 			TreeNode node = new TreeNode(Data);
-			lock(this){
-				if(head == null){
-					head = node;
-					return true;
-				}
+			bool success;
+			treeLock.EnterWriteLock();
+			if(head == null){
+				head = node;
+				success = true;
+			}else{
+				success = InsertRecursive(node, head);
 			}
-			lock(head){
-				return InsertRecursive(node, head);
-			}
+			treeLock.ExitWriteLock();
+			return success;
 		}
 		
 
 		public bool Remove(int key){
-			if(head == null) return false;
-			else {
-				lock(this){
-					if(head.Data == key){
-						var auxRoot = new TreeNode(0);
-						auxRoot.Left = head;
-						var result = head.Remove(key, auxRoot);
-						head = auxRoot.Left;
-						return result;
-					}
+			treeLock.EnterWriteLock();
+			if(head == null){
+				treeLock.ExitWriteLock(); 
+				return false;
+			}else {
+				if(head.Data == key){
+					var auxRoot = new TreeNode(0);
+					auxRoot.Left = head;
+					var result = head.Remove(key, auxRoot);
+					head = auxRoot.Left;
+					treeLock.ExitWriteLock();
+					return result;
+				}else{
+					var success = head.Remove(key, null);
+					treeLock.ExitWriteLock();
+					return success;
 				}
-				return head.Remove(key, null);
 			}
 		}
 
 		public bool Contains(int key){
-			return Contains(key, head);
+			bool success;
+			treeLock.EnterReadLock();
+			success = Contains(key, head);
+			treeLock.ExitReadLock();
+			return success;
 		}
 		
 		private bool Contains(int key, TreeNode node){
 			if(node == null) return false;
-			bool value = false;
-			node.rwlock.EnterReadLock();
-			if(node.Data == key) value = true;
-			if(key < node.Data) value = Contains(key, node.Left);
-			if(key > node.Data) value = Contains (key, node.Right);
-			node.rwlock.ExitReadLock();
-			return value;
+			if(node.Data == key) return true;
+			if(key < node.Data) return Contains(key, node.Left);
+			if(key > node.Data) return Contains (key, node.Right);
+			return false;
 		}
 
 		//on method entry, the mutex for SubTreeNode is aquired by the current thread. There is no need to lock
 		// Data node since it is thread-local (was created in public function, passed in as simple parameter)
 		private bool InsertRecursive(TreeNode DataNode, TreeNode SubTreeRoot){
-			SubTreeRoot.rwlock.EnterWriteLock();
-
 			var LeftValid = SubTreeRoot.Left != null;
 			var RightValid = SubTreeRoot.Right != null;
 			bool ret_val; 
@@ -88,60 +94,43 @@ namespace SearchTree
 			}else{
 				ret_val = false; //in the tree
 			}
-
-			SubTreeRoot.rwlock.ExitWriteLock();
 			return ret_val;
 		}
 		
 		public IEnumerable<int> InOrder(){
-			if(head != null)
+			treeLock.EnterReadLock();
+			if(head != null){
 				foreach(var x in InOrder (head))
 					yield return x;
+			}
+			treeLock.ExitReadLock();
 		}
 		
 		private IEnumerable<int> InOrder(TreeNode node){
 			if(node != null){
-				node.rwlock.EnterReadLock();
 				foreach(var x in InOrder(node.Left))
 					yield return x;
 				yield return head.Data;
 				foreach(var x in InOrder(node.Right))
 					yield return x;
-				node.rwlock.ExitReadLock();
 			}
 		}			
 	}
 	class TreeNode {
 		public int Data;
 		public TreeNode Left, Right;
-		public ReaderWriterLockSlim rwlock;
 
 		public TreeNode( int _Data){
 			Data = _Data;
-			rwlock = new ReaderWriterLockSlim();
 		}
 
 		public bool Remove(int value, TreeNode parent){
-			rwlock.EnterWriteLock();
 			if(value < this.Data){
-				if(Left != null){
-					var val = Left.Remove(value, this);
-					rwlock.ExitWriteLock();
-					return val;
-				}else{
-					var val = Right.Remove(value, this);
-					rwlock.ExitWriteLock();
-					return val;
-				}
+				if(Left != null) return Left.Remove(value, this);
+				else return Right.Remove(value, this);
 			}else if(value > this.Data){
-				if(Right != null){
-					var val = Right.Remove(value, this);
-					rwlock.ExitWriteLock();
-					return val;
-				}else{
-					rwlock.ExitWriteLock();
-					return false;
-				}
+				if(Right != null) return Right.Remove(value, this);
+				else return false;
 			}else{
 				if(Left != null && Right != null){
 					this.Data = Right.FindMin().Data;
@@ -151,7 +140,6 @@ namespace SearchTree
 				}else if(parent.Right == this){
 					parent.Right = (Left == null) ? Right : Left;
 				}
-				rwlock.ExitWriteLock();
 				return true;
 			} // end mutex region
 		}

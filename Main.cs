@@ -10,7 +10,7 @@ namespace SearchTree
 	{
 		public static void Main (string[] args)
 		{
-			const int threads = 3;
+			const int threads = 4;
 			const int per_thread = 1000000;
 			const int DataSize = threads * per_thread;
 			SearchTree mySearchTree = new SearchTree();
@@ -30,18 +30,11 @@ namespace SearchTree
 				ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds / 10);
 			Console.Out.WriteLine(DataSize + " insertions completed in " + elapsedTime + " on " + threads + " threads");
 
-			var check = new int[DataSize];
-			foreach(var treeNum in mySearchTree.InOrder()){
-				check[treeNum]+=1;
-			}
-				
 			Debug.Assert(!mySearchTree.Contains(-1), "Tree had -1, which was not inserted");
 
 			foreach(var item in added){
 				Debug.Assert(mySearchTree.Contains(item), "Tree couldn't find " + item);
-				check[item]= Math.Max(check[item] - 1, 0);
 			}
-			Debug.Assert(Array.TrueForAll(check, (item) => item == 0), "Invalid enumerator!");
 
 			//remove ~ 1/2 of the nodes, check for validity
 			var removed = new System.Collections.Generic.HashSet<int>();
