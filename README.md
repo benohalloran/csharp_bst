@@ -1,6 +1,6 @@
 C# Search Tree
 ==============
-A Simple unbalanced Binary Search Tree with concurrent access.
+An unbalanced Binary Search Tree with concurrent access.
 
 
 This is a simple implementation of a Binary Search Tree ADT without any sense of balancing. The tree supports concurrency through a global reader-writer (RW) lock.

@@ -7,7 +7,7 @@ using System.Diagnostics;
 namespace SearchTree
 {
 	/* An unbalanced binary search tree protected by a singe RW lock.
-	 * 
+	 *
 	 */
 	public class SearchTree
 	{
@@ -18,12 +18,12 @@ namespace SearchTree
 			head = null;
 			treeLock = new ReaderWriterLockSlim();
 		}
-		/** Insert an item into the tree. 
-		 * 
-		 * @param Data the new value to put into the tree
+
+		/**
+		 * Insert an item into the tree
 		 *
-		 * @return true if the item was added to the tree, ie. it was not already present
-		 * 
+		 * @param {[type]} int Data the new item to add to the three
+		 * @return true if the item was inserted (ie it was not already in the tree)
 		 */
 		public bool Insert(int Data){
 			TreeNode DataNode = new TreeNode(Data);
@@ -57,11 +57,11 @@ namespace SearchTree
 			return success;
 		}
 
-		/* Remove an element from the tree.
-		 * 
-		 * @param key the data to be removed
-		 * 
-		 * @return true if the item was removed without error 
+		/**
+		 * Remove an element from the tree.
+		 *
+		 * @param {[type]} int key @param key the data to be removed
+		 * @return true if the item was removed without error
 		 */
 		public bool Remove(int key){
 			treeLock.EnterWriteLock();
@@ -84,8 +84,8 @@ namespace SearchTree
 			}
 		}
 		/* Search the tree for a data element
-		 * 
-		 * @param key what to search for
+		 *
+		 * @param {[type]} int key @param key to look up
 		 * @return true if key is in the tree
 		 */
 		public bool Contains(int key){
@@ -103,7 +103,10 @@ namespace SearchTree
 			return success;
 		}
 
-		// Allow for users to safely iterate over all elements in order
+		/**
+		 * Iterate over the elements in the tree using inder order traversal,
+		 * e.g. 1, 2, 3 etc
+		 */
 		public IEnumerable<int> InOrder(){
 			treeLock.EnterReadLock();
 			if(head != null){
@@ -112,7 +115,7 @@ namespace SearchTree
 			}
 			treeLock.ExitReadLock();
 		}
-
+		//recursive helper routine for the InOrder enumerator
 		private IEnumerable<int> InOrder(TreeNode node){
 			if(node != null){
 				foreach(var x in InOrder(node.Left))
