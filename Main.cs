@@ -11,13 +11,8 @@ namespace SearchTree
 		public static void Main (string[] args)
 		{
 			const int threads = 3;
-			const int per_thread = 500000;
+			const int per_thread = 1000000;
 			const int DataSize = threads * per_thread;
-			var parallelOptions = new ParallelOptions();
-			parallelOptions.MaxDegreeOfParallelism = threads;
-		
-
-			Console.WriteLine ("Hello World!");
 			SearchTree mySearchTree = new SearchTree();
 			var random = new Random();
 			var added = new int[DataSize];
@@ -37,7 +32,6 @@ namespace SearchTree
 
 			var check = new int[DataSize];
 			foreach(var treeNum in mySearchTree.InOrder()){
-				//Console.Out.WriteLine(treeNum);
 				check[treeNum]+=1;
 			}
 				
@@ -59,8 +53,6 @@ namespace SearchTree
 					Debug.Assert(!mySearchTree.Contains(val), "Found " + val + " after removal");
 				}
 			}
-
-
 			Console.Out.WriteLine("Test completed successfully");
 		}
 	}
