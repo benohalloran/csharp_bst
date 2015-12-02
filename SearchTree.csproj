@@ -32,11 +32,13 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="nunit.framework" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Main.cs" />
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="SearchTree.cs" />
+    <Compile Include="TreeTests.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>
