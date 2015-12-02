@@ -6,16 +6,17 @@ using System.Diagnostics;
 
 namespace SearchTree
 {
+	
 	public class SearchTree
 	{
 		private TreeNode head;
 		private ReaderWriterLockSlim treeLock;
 		public SearchTree ()
 		{
-			head = null;		
+			head = null;
 			treeLock = new ReaderWriterLockSlim();
 		}
-		
+
 		public bool Insert(int Data){
 			TreeNode node = new TreeNode(Data);
 			bool success;
@@ -23,22 +24,21 @@ namespace SearchTree
 			if(head == null){
 				head = node;
 				success = true;
-			}else{
+			}else
 				success = InsertRecursive(node, head);
-			}
 			treeLock.ExitWriteLock();
 			return success;
 		}
-		
+
 
 		public bool Remove(int key){
 			treeLock.EnterWriteLock();
 			if(head == null){
-				treeLock.ExitWriteLock(); 
+				treeLock.ExitWriteLock();
 				return false;
 			}else {
 				if(head.Data == key){
-					var auxRoot = new TreeNode(0);
+					var auxRoot = new TreeNode(0); //the 0 value is just a dumby value. Not used for anything
 					auxRoot.Left = head;
 					var result = head.Remove(key, auxRoot);
 					head = auxRoot.Left;
@@ -59,7 +59,7 @@ namespace SearchTree
 			treeLock.ExitReadLock();
 			return success;
 		}
-		
+
 		private bool Contains(int key, TreeNode node){
 			if(node == null) return false;
 			if(node.Data == key) return true;
@@ -68,12 +68,11 @@ namespace SearchTree
 			return false;
 		}
 
-		//on method entry, the mutex for SubTreeNode is aquired by the current thread. There is no need to lock
-		// Data node since it is thread-local (was created in public function, passed in as simple parameter)
+
 		private bool InsertRecursive(TreeNode DataNode, TreeNode SubTreeRoot){
 			var LeftValid = SubTreeRoot.Left != null;
 			var RightValid = SubTreeRoot.Right != null;
-			bool ret_val; 
+			bool ret_val;
 
 			var DataDiff = DataNode.Data - SubTreeRoot.Data;
 
@@ -96,7 +95,7 @@ namespace SearchTree
 			}
 			return ret_val;
 		}
-		
+		// Allow for users to safely iterate over all elements in order
 		public IEnumerable<int> InOrder(){
 			treeLock.EnterReadLock();
 			if(head != null){
@@ -105,7 +104,7 @@ namespace SearchTree
 			}
 			treeLock.ExitReadLock();
 		}
-		
+
 		private IEnumerable<int> InOrder(TreeNode node){
 			if(node != null){
 				foreach(var x in InOrder(node.Left))
@@ -114,7 +113,7 @@ namespace SearchTree
 				foreach(var x in InOrder(node.Right))
 					yield return x;
 			}
-		}			
+		}
 	}
 	class TreeNode {
 		public int Data;
@@ -153,4 +152,3 @@ namespace SearchTree
 		}
 	}
 }
-
