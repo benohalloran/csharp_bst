@@ -6,7 +6,9 @@ using System.Diagnostics;
 
 namespace SearchTree
 {
-	
+	/* An unbalanced binary search tree protected by a singe RW lock.
+	 * 
+	 */
 	public class SearchTree
 	{
 		private TreeNode head;
@@ -16,21 +18,51 @@ namespace SearchTree
 			head = null;
 			treeLock = new ReaderWriterLockSlim();
 		}
-
+		/** Insert an item into the tree. 
+		 * 
+		 * @param Data the new value to put into the tree
+		 *
+		 * @return true if the item was added to the tree, ie. it was not already present
+		 * 
+		 */
 		public bool Insert(int Data){
-			TreeNode node = new TreeNode(Data);
-			bool success;
+			TreeNode DataNode = new TreeNode(Data);
+			bool success = false;
 			treeLock.EnterWriteLock();
 			if(head == null){
-				head = node;
+				head = DataNode;
 				success = true;
-			}else
-				success = InsertRecursive(node, head);
+			}else{
+				var node = head;
+				while(node != null && !success){
+					var LeftValid = node.Left != null;
+					var RightValid = node.Right != null;
+					if(DataNode.Data < node.Data){
+						if(LeftValid) node = node.Left;
+						else{
+							node.Left = DataNode;
+							success = true;
+						}
+					}else if(DataNode.Data > node.Data){
+						if(RightValid) node = node.Right;
+						else{
+							node.Right = DataNode;
+							success = true;
+						}
+					}else break;
+				}
+
+			}
 			treeLock.ExitWriteLock();
 			return success;
 		}
 
-
+		/* Remove an element from the tree.
+		 * 
+		 * @param key the data to be removed
+		 * 
+		 * @return true if the item was removed without error 
+		 */
 		public bool Remove(int key){
 			treeLock.EnterWriteLock();
 			if(head == null){
@@ -51,50 +83,26 @@ namespace SearchTree
 				}
 			}
 		}
-
+		/* Search the tree for a data element
+		 * 
+		 * @param key what to search for
+		 * @return true if key is in the tree
+		 */
 		public bool Contains(int key){
-			bool success;
+			bool success = false;
 			treeLock.EnterReadLock();
-			success = Contains(key, head);
+			var node = head;
+			while(node != null && !success){
+				if(key < node.Data)
+					node = node.Left;
+				else if(key > node.Data)
+					node = node.Right;
+				else success = true;
+			}
 			treeLock.ExitReadLock();
 			return success;
 		}
 
-		private bool Contains(int key, TreeNode node){
-			if(node == null) return false;
-			if(node.Data == key) return true;
-			if(key < node.Data) return Contains(key, node.Left);
-			if(key > node.Data) return Contains (key, node.Right);
-			return false;
-		}
-
-
-		private bool InsertRecursive(TreeNode DataNode, TreeNode SubTreeRoot){
-			var LeftValid = SubTreeRoot.Left != null;
-			var RightValid = SubTreeRoot.Right != null;
-			bool ret_val;
-
-			var DataDiff = DataNode.Data - SubTreeRoot.Data;
-
-			if(DataDiff < 0){
-				if(LeftValid)
-					ret_val = InsertRecursive(DataNode, SubTreeRoot.Left);
-				else{
-					SubTreeRoot.Left = DataNode;
-					ret_val = true;
-				}
-			}else if(DataDiff > 0){
-				if(RightValid)
-					ret_val = InsertRecursive(DataNode, SubTreeRoot.Right);
-				else{
-					SubTreeRoot.Right = DataNode;
-					ret_val = true;
-				}
-			}else{
-				ret_val = false; //in the tree
-			}
-			return ret_val;
-		}
 		// Allow for users to safely iterate over all elements in order
 		public IEnumerable<int> InOrder(){
 			treeLock.EnterReadLock();
@@ -142,6 +150,7 @@ namespace SearchTree
 				return true;
 			} // end mutex region
 		}
+
 		private TreeNode FindMin(){
 			if(this.Left == null) return this;
 			else return Left.FindMin();
