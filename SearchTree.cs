@@ -16,50 +16,34 @@ namespace SearchTree
 		}
 		
 		public bool Insert(int Data){
-			TreeNode node = new TreeNode(Data);	
-			if(head == null){
-				lock(this){
+			TreeNode node = new TreeNode(Data);
+			lock(this){
+				if(head == null){
 					head = node;
 					return true;
 				}
-			}else
-				lock(head){
-					return InsertRecursive(node, head);
-				}
-		
+			}
+			lock(head){
+				return InsertRecursive(node, head);
+			}
 		}
 		
 
 		public bool Remove(int key){
-			lock(this){
-				TreeNode parent, current;
-				for(parent = null, current = head; current != null; 
-					parent = current, current = key < current.Data ? current.Left : current.Right){
-					if(current.Data == key){
-						//remove current from the tree
-						if(parent == null){
-							//head is being removed
-							Debug.Assert(current == head);
-							throw new ArgumentException("Head removal not yet supported...");
-						}else{
-							var is_left = current == parent.Left;
-							var new_root = is_left ? FindMin(current) : FindMax(current);
-						}
+			if(head == null) return false;
+			else {
+				lock(this){
+					if(head.Data == key){
+						var auxRoot = new TreeNode(0);
+						auxRoot.Left = head;
+						var result = head.Remove(key, auxRoot);
+						head = auxRoot.Left;
+						return result;
 					}
 				}
+				return head.Remove(key, null);
 			}
-			return false;
 		}
-
-		private TreeNode FindMin(TreeNode node){
-			if(node.Left == null) return node;
-			else return FindMin(node.Left);
-		}
-		private TreeNode FindMax(TreeNode node){
-			if(node.Right == null) return node;
-			else return FindMax(node.Right);
-		}
-
 
 		public bool Contains(int key){
 			return Contains(key, head);
@@ -72,6 +56,7 @@ namespace SearchTree
 			if(key > node.Data) return Contains (key, node.Right);
 			return false;
 		}
+
 		//on method entry, the mutex for SubTreeNode is aquired by the current thread. There is no need to lock
 		// Data node since it is thread-local (was created in public function, passed in as simple parameter)
 		private bool InsertRecursive(TreeNode DataNode, TreeNode SubTreeRoot){
@@ -124,8 +109,47 @@ namespace SearchTree
 		public int Data;
 		public TreeNode Left, Right;
 
-		public TreeNode(int _Data){
+		public TreeNode( int _Data){
 			Data = _Data;
+		}
+
+		public bool Remove(int value, TreeNode parent){
+			lock(this){
+				if(value < this.Data){
+					if(Left != null){
+						var val = Left.Remove(value, this);
+						return val;
+					}else{
+						var val = Right.Remove(value, this);
+						return val;
+					}
+				}else if(value > this.Data){
+					if(Right != null){
+						var val = Right.Remove(value, this);
+						return val;
+					}else{ 
+						return false;
+					}
+				}else{
+					if(Left != null && Right != null){
+						this.Data = Right.FindMin().Data;
+						Right.Remove(this.Data, this);
+					}else if(parent.Left == this){
+						parent.Left = (Left == null) ? Right : Left;
+					}else if(parent.Right == this){
+						parent.Right = (Left == null) ? Right : Left;
+					}
+					return true;
+				} // end mutex region
+			}
+		}
+		private TreeNode FindMin(){
+			if(this.Left == null) return this;
+			else return Left.FindMin();
+		}
+		private TreeNode FindMax(){
+			if(this.Right == null) return this;
+			else return Right.FindMax();
 		}
 	}
 }
